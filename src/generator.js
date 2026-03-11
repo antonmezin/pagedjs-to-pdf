@@ -169,7 +169,7 @@ const generateDocument = async (testMode = false) => {
 /**
  * Generiert ein in Chunks aufgeteiltes Dokument
  */
-const generateChunkedDocument = async (testMode = false, chunkSize = 50) => {
+const generateChunkedDocument = async (testMode = false, chunkSize = 50, generatePDFs = false) => {
   console.log('🚀 Starte CHUNKED Dokumentgenerierung...');
   console.log(`📑 Chunk-Größe: ${chunkSize} Seiten pro Datei`);
   if (testMode) {
@@ -209,9 +209,32 @@ const generateChunkedDocument = async (testMode = false, chunkSize = 50) => {
     console.log('4️⃣  Erstelle Content-Chunks...');
     const chunkFiles = await chunker.generateAllChunks(cssContent, outputDir);
 
-    // 7. Index-Seite generieren
-    console.log('5️⃣  Erstelle Index-Seite...');
-    const indexPath = await chunker.generateIndexPage(chunkFiles, tocFile, outputDir);
+    // 7. PDF-Generierung (optional)
+    let pdfResults = null;
+    if (generatePDFs) {
+      console.log('5️⃣  Konvertiere zu PDF...');
+      try {
+        pdfResults = await chunker.generateAllPDFs(chunkFiles, tocFile, outputDir, {
+          concurrency: 2,
+          optimizeImages: true,
+          enableHinting: true,
+          jpegQuality: 85
+        });
+        console.log(`   ✅ ${pdfResults.stats.successful} PDFs erfolgreich erstellt`);
+        if (pdfResults.stats.failed > 0) {
+          console.warn(`   ⚠️  ${pdfResults.stats.failed} PDF-Konvertierungen fehlgeschlagen`);
+        }
+      } catch (error) {
+        console.error('❌ PDF-Generierung fehlgeschlagen:', error.message);
+        console.log('   📄 HTML-Dateien wurden trotzdem erstellt');
+      }
+    }
+
+    // 8. Index-Seite generieren (mit oder ohne PDF-Links)
+    console.log(generatePDFs ? '6️⃣  Erstelle erweiterte Index-Seite...' : '5️⃣  Erstelle Index-Seite...');
+    const indexPath = generatePDFs && pdfResults ?
+      await chunker.generatePDFIndexPage(chunkFiles, pdfResults.chunkPdfs, tocFile, pdfResults.tocPdf, outputDir) :
+      await chunker.generateIndexPage(chunkFiles, tocFile, outputDir);
 
     // Erfolgreiche Generierung
     console.log('=' .repeat(60));
@@ -221,12 +244,19 @@ const generateChunkedDocument = async (testMode = false, chunkSize = 50) => {
 
     // Statistiken
     const totalDocumentPages = chunker.tocPages + contents.length;
+    const htmlSize = Math.round(chunkFiles.reduce((sum, f) => sum + f.size, 0) + tocFile.size);
+    const pdfSize = pdfResults ? Math.round((pdfResults.chunkPdfs?.reduce((sum, f) => sum + f.size, 0) || 0) + (pdfResults.tocPdf?.size || 0)) : 0;
+
     console.log('\n📋 Zusammenfassung:');
     console.log(`   • Gesamt-Seitenzahl: ${totalDocumentPages} (${chunker.tocPages} TOC + ${contents.length} Content)`);
     console.log(`   • TOC-Datei: ${tocFile.fileName} (${tocFile.size} KB)`);
     console.log(`   • Content-Chunks: ${chunkFiles.length} (je ${chunkSize} Seiten)`);
     console.log(`   • Seitennummerierung: TOC 1-${chunker.tocPages}, Content ${chunker.tocPages + 1}-${totalDocumentPages}`);
-    console.log(`   • Gesamtgröße: ${Math.round(chunkFiles.reduce((sum, f) => sum + f.size, 0) + tocFile.size)} KB`);
+    console.log(`   • HTML-Größe: ${htmlSize} KB`);
+    if (generatePDFs && pdfResults) {
+      console.log(`   • PDF-Größe: ${pdfSize} KB (${pdfResults.stats.successful}/${pdfResults.stats.totalFiles} Dateien)`);
+      console.log(`   • PDF-Status: ${pdfResults.stats.successful} erfolgreich, ${pdfResults.stats.failed} fehlgeschlagen`);
+    }
     console.log(`   • Generiert: ${new Date().toLocaleString('de-DE')}`);
     console.log(`   • Druckreihenfolge: TOC → Teil 1 → Teil 2 → ... → Teil ${chunkFiles.length}`);
 
@@ -234,6 +264,7 @@ const generateChunkedDocument = async (testMode = false, chunkSize = 50) => {
       indexPath,
       chunkFiles,
       tocFile,
+      pdfResults,
       outputDir
     };
 
@@ -251,20 +282,38 @@ if (require.main === module) {
   // Parse command line arguments
   const testMode = process.argv.includes('--300pages') || process.argv.includes('--large');
   const chunkMode = process.argv.includes('--chunks') || process.argv.includes('--split');
+  const pdfMode = process.argv.includes('--pdf');
 
   // Parse chunk size
   const chunkSizeArg = process.argv.find(arg => arg.startsWith('--chunk-size='));
   const chunkSize = chunkSizeArg ? parseInt(chunkSizeArg.split('=')[1]) : 50;
 
+  // PDF mode requires chunk mode
+  if (pdfMode && !chunkMode) {
+    console.error('❌ PDF generation requires chunk mode. Use --chunks --pdf together.');
+    process.exit(1);
+  }
+
   if (chunkMode) {
-    // Chunked document generation
-    generateChunkedDocument(testMode, chunkSize)
+    // Chunked document generation (with optional PDF)
+    generateChunkedDocument(testMode, chunkSize, pdfMode)
       .then(result => {
         console.log(`\n🌐 Um das Dokument anzuzeigen:`);
         console.log(`   open "${result.indexPath}"`);
         console.log(`   oder öffne die Index-Seite manuell im Browser.\n`);
 
-        console.log(`📂 Einzelne Chunks:`);
+        if (pdfMode && result.pdfResults) {
+          console.log(`📕 PDF-Dateien generiert:`);
+          if (result.pdfResults.tocPdf) {
+            console.log(`   • ${result.pdfResults.tocPdf.fileName} (TOC, ${result.pdfResults.tocPdf.size} KB)`);
+          }
+          result.pdfResults.chunkPdfs?.forEach(pdfFile => {
+            console.log(`   • ${pdfFile.fileName} (Seiten ${pdfFile.chunk.startPage}-${pdfFile.chunk.endPage}, ${pdfFile.size} KB)`);
+          });
+          console.log(``);
+        }
+
+        console.log(`📄 HTML-Chunks:`);
         result.chunkFiles.forEach(chunk => {
           console.log(`   • ${chunk.fileName} (Seiten ${chunk.chunk.startPage}-${chunk.chunk.endPage})`);
         });

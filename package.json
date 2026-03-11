@@ -8,10 +8,14 @@
     "generate:300": "babel-node src/generator.js --300pages",
     "generate:chunks": "babel-node src/generator.js --chunks",
     "generate:chunks:300": "babel-node src/generator.js --300pages --chunks",
+    "generate:pdf": "babel-node src/generator.js --chunks --pdf",
+    "generate:300:pdf": "babel-node src/generator.js --300pages --chunks --pdf",
     "dev": "babel-node src/generator.js && open output/document.html",
     "dev:chunks": "babel-node src/generator.js --chunks && open output/chunks/index.html",
+    "dev:pdf": "babel-node src/generator.js --chunks --pdf && open output/chunks/index.html",
     "test:300": "babel-node src/generator.js --300pages && open output/document-300pages.html",
-    "test:chunks:300": "babel-node src/generator.js --300pages --chunks && open output/chunks/index.html"
+    "test:chunks:300": "babel-node src/generator.js --300pages --chunks && open output/chunks/index.html",
+    "test:pdf:300": "babel-node src/generator.js --300pages --chunks --pdf && open output/chunks/index.html"
   },
   "dependencies": {
     "fs-extra": "^11.1.1",

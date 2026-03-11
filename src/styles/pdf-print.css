@@ -1,0 +1,248 @@
+/* PDF-Specific Print Optimizations for WeasyPrint
+ * These styles enhance PDF generation quality and remove screen-only elements
+ */
+
+/* ============================================
+   WEASYPRINT-SPECIFIC OPTIMIZATIONS
+   ============================================ */
+
+@media print {
+  /* Remove all screen-only page number elements */
+  .screen-page-number,
+  .screen-page-number-override,
+  .screen-chunk-info,
+  .screen-chunk-info-override,
+  .chunk-nav-header {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Remove screen visual enhancements */
+  .page {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    border-radius: 0 !important;
+  }
+
+  /* Remove page break visual separators */
+  .page-break::after {
+    display: none !important;
+  }
+
+  /* Clean up any debug or development elements */
+  .debug-info,
+  .development-only,
+  .browser-only {
+    display: none !important;
+  }
+
+  /* Optimize table printing */
+  .content-table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .table-row {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Ensure proper page breaks for headings */
+  h1, h2, h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Avoid orphaned content */
+  p {
+    orphans: 2;
+    widows: 2;
+  }
+}
+
+/* ============================================
+   WEASYPRINT-SPECIFIC MEDIA QUERY
+   ============================================ */
+
+@media weasyprint {
+  /* WeasyPrint-specific font optimizations */
+  body {
+    font-family: 'Arial', 'Helvetica', sans-serif !important;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  /* Ensure consistent page sizing */
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: auto;
+  }
+
+  /* Force page breaks where needed */
+  .page {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  /* Optimize table rendering for PDF */
+  .content-table {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .table-header-cell,
+  .table-cell {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Ensure proper text rendering */
+  * {
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Link styling for PDF */
+  a {
+    color: #2c3e50;
+    text-decoration: none;
+  }
+
+  /* Remove any hover effects that don't make sense in PDF */
+  *:hover {
+    background-color: transparent !important;
+    color: inherit !important;
+  }
+}
+
+/* ============================================
+   HIGH-DPI PDF OPTIMIZATIONS
+   ============================================ */
+
+@media print and (min-resolution: 150dpi) {
+  /* Higher resolution settings for better PDF quality */
+  body {
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  h1 { font-size: 18pt; }
+  h2 { font-size: 16pt; }
+  h3 { font-size: 14pt; }
+
+  .content-table {
+    font-size: 10pt;
+  }
+
+  .table-header-cell,
+  .table-cell {
+    padding: 6pt 8pt;
+  }
+}
+
+/* ============================================
+   PDF-SPECIFIC PAGE LAYOUT
+   ============================================ */
+
+/* Enhanced @page rules for PDF generation */
+@page :first {
+  margin-top: 40mm;
+}
+
+@page :left {
+  margin-left: 25mm;
+  margin-right: 15mm;
+}
+
+@page :right {
+  margin-left: 15mm;
+  margin-right: 25mm;
+}
+
+/* Ensure TOC pages have consistent styling */
+@page toc {
+  @top-center {
+    content: "Inhaltsverzeichnis";
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    color: #888;
+  }
+}
+
+/* Content pages with chapter information */
+@page content {
+  @bottom-left {
+    content: "Dokument-Chunk";
+    font-family: 'Arial', sans-serif;
+    font-size: 8pt;
+    color: #999;
+  }
+}
+
+/* ============================================
+   PRINT COLOR AND CONTRAST OPTIMIZATION
+   ============================================ */
+
+@media print {
+  /* Ensure sufficient contrast for PDF reading */
+  .page-title {
+    color: #000 !important;
+  }
+
+  .table-header-cell {
+    background-color: #333 !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  .table-row:nth-child(even) {
+    background-color: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  /* Borders and lines should be visible in PDF */
+  .toc-entry,
+  .table-cell,
+  .page-header {
+    border-color: #333 !important;
+  }
+}
+
+/* ============================================
+   PDF FILE SIZE OPTIMIZATION
+   ============================================ */
+
+@media print {
+  /* Remove unnecessary decorative elements that increase file size */
+  .decorative,
+  .shadow,
+  .gradient,
+  .animation {
+    display: none !important;
+  }
+
+  /* Simplify complex styling */
+  .page {
+    box-shadow: none !important;
+    background: white !important;
+  }
+
+  /* Optimize image rendering */
+  img {
+    image-rendering: auto;
+    max-width: 100%;
+    height: auto;
+  }
+}

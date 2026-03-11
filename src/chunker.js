@@ -7,6 +7,10 @@ const path = require('path');
 const Document = require('./components/Document.js');
 const TableOfContents = require('./components/TableOfContents.js');
 
+// Import PDF functionality
+const WeasyPrintWrapper = require('./pdf/weasyprint-wrapper.js');
+const { PDF_CONFIG, generateChunkFileName, estimateProcessingTime } = require('./pdf/pdf-config.js');
+
 /**
  * Document Chunker - Splits large documents into smaller files
  */
@@ -935,6 +939,457 @@ body {
     await fs.writeFile(indexPath, indexHTML, 'utf8');
 
     console.log(`   ✅ index.html erstellt`);
+    return indexPath;
+  }
+
+  // ============================================
+  // PDF GENERATION METHODS
+  // ============================================
+
+  /**
+   * Convert HTML chunk to PDF using WeasyPrint
+   */
+  async generateChunkPDF(chunkFile, outputDir, options = {}) {
+    console.log(`📄➜📕 Converting ${chunkFile.fileName} to PDF...`);
+
+    const wrapper = new WeasyPrintWrapper();
+
+    const htmlPath = path.join(outputDir, chunkFile.fileName);
+    const pdfFileName = chunkFile.fileName.replace('.html', '.pdf');
+    const pdfPath = path.join(outputDir, pdfFileName);
+
+    try {
+      const result = await wrapper.convertToPDF(htmlPath, pdfPath, {
+        optimizeImages: true,
+        enableHinting: true,
+        jpegQuality: 85,
+        ...options
+      });
+
+      return {
+        fileName: pdfFileName,
+        filePath: pdfPath,
+        size: result.fileSizeKB,
+        sizeMB: result.fileSizeMB,
+        duration: result.duration,
+        chunk: chunkFile.chunk,
+        htmlSource: htmlPath
+      };
+
+    } catch (error) {
+      console.error(`   ❌ PDF conversion failed for ${chunkFile.fileName}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert TOC HTML to PDF
+   */
+  async generateTOCPDF(tocFile, outputDir, options = {}) {
+    console.log(`📖➜📕 Converting ${tocFile.fileName} to PDF...`);
+
+    const wrapper = new WeasyPrintWrapper();
+
+    const htmlPath = path.join(outputDir, tocFile.fileName);
+    const pdfFileName = tocFile.fileName.replace('.html', '.pdf');
+    const pdfPath = path.join(outputDir, pdfFileName);
+
+    try {
+      const result = await wrapper.convertToPDF(htmlPath, pdfPath, {
+        optimizeImages: true,
+        enableHinting: true,
+        jpegQuality: 85,
+        ...options
+      });
+
+      return {
+        fileName: pdfFileName,
+        filePath: pdfPath,
+        size: result.fileSizeKB,
+        sizeMB: result.fileSizeMB,
+        duration: result.duration,
+        htmlSource: htmlPath
+      };
+
+    } catch (error) {
+      console.error(`   ❌ TOC PDF conversion failed:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate all PDFs from existing HTML files
+   */
+  async generateAllPDFs(chunkFiles, tocFile, outputDir, options = {}) {
+    console.log(`🔨 Converting HTML files to PDF...`);
+
+    const wrapper = new WeasyPrintWrapper();
+    const startTime = Date.now();
+    const totalFiles = chunkFiles.length + 1; // +1 for TOC
+    const estimatedTime = estimateProcessingTime(this.totalPages, totalFiles);
+
+    console.log(`📊 Processing ${totalFiles} files (estimated ${estimatedTime}s)`);
+
+    const results = {
+      tocPdf: null,
+      chunkPdfs: [],
+      errors: [],
+      stats: {
+        totalFiles,
+        successful: 0,
+        failed: 0,
+        totalSize: 0,
+        totalDuration: 0
+      }
+    };
+
+    try {
+      // 1. Convert TOC to PDF
+      console.log(`1️⃣  Converting TOC...`);
+      results.tocPdf = await this.generateTOCPDF(tocFile, outputDir, options);
+      results.stats.successful++;
+      results.stats.totalSize += results.tocPdf.size;
+      results.stats.totalDuration += results.tocPdf.duration;
+
+      // 2. Convert chunks to PDF in batches
+      console.log(`2️⃣  Converting content chunks...`);
+      const concurrency = options.concurrency || 2; // Conservative concurrency
+
+      for (let i = 0; i < chunkFiles.length; i += concurrency) {
+        const batch = chunkFiles.slice(i, i + concurrency);
+        const batchNumber = Math.floor(i / concurrency) + 1;
+        const totalBatches = Math.ceil(chunkFiles.length / concurrency);
+
+        console.log(`   📦 Batch ${batchNumber}/${totalBatches} (${batch.length} files)`);
+
+        const batchPromises = batch.map(async (chunkFile) => {
+          try {
+            const pdfResult = await this.generateChunkPDF(chunkFile, outputDir, options);
+            results.chunkPdfs.push(pdfResult);
+            results.stats.successful++;
+            results.stats.totalSize += pdfResult.size;
+            results.stats.totalDuration += pdfResult.duration;
+            return pdfResult;
+          } catch (error) {
+            console.error(`   ❌ Failed: ${chunkFile.fileName} - ${error.message}`);
+            results.errors.push({ chunkFile, error });
+            results.stats.failed++;
+            return null;
+          }
+        });
+
+        await Promise.all(batchPromises);
+      }
+
+      const actualDuration = Date.now() - startTime;
+
+      console.log(`🎉 PDF conversion complete!`);
+      console.log(`   ✅ Success: ${results.stats.successful}/${totalFiles} files`);
+      console.log(`   ❌ Failed: ${results.stats.failed} files`);
+      console.log(`   💾 Total size: ${Math.round(results.stats.totalSize)} KB`);
+      console.log(`   ⏱️  Total time: ${Math.round(actualDuration/1000)}s`);
+
+      if (results.errors.length > 0) {
+        console.warn(`⚠️  ${results.errors.length} conversion errors occurred`);
+      }
+
+      return results;
+
+    } catch (error) {
+      console.error(`❌ Batch PDF conversion failed:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Create enhanced index page with PDF download links
+   */
+  async generatePDFIndexPage(chunkFiles, chunkPdfs, tocFile, tocPdf, outputDir) {
+    console.log('🔗 Creating enhanced index with PDF links...');
+
+    const totalHtmlSize = Math.round(chunkFiles.reduce((sum, f) => sum + f.size, 0) + tocFile.size);
+    const totalPdfSize = Math.round((chunkPdfs?.reduce((sum, f) => sum + f.size, 0) || 0) + (tocPdf?.size || 0));
+
+    const indexHTML = `<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${this.title} - Dokumenten-Hub mit PDF Export</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .document-title {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .format-tabs {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+            gap: 20px;
+        }
+        .format-tab {
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            flex: 1;
+            max-width: 400px;
+        }
+        .format-tab.pdf {
+            border-color: #e74c3c;
+            background: #fdf2f2;
+        }
+        .format-tab.html {
+            border-color: #3498db;
+            background: #f2f8fd;
+        }
+        .format-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .pdf .format-title { color: #c0392b; }
+        .html .format-title { color: #2980b9; }
+
+        .toc-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .download-link {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        .pdf-link {
+            background: #e74c3c;
+            color: white;
+        }
+        .pdf-link:hover {
+            background: #c0392b;
+        }
+        .html-link {
+            background: #3498db;
+            color: white;
+        }
+        .html-link:hover {
+            background: #2980b9;
+        }
+        .chunks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .chunk-card {
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+            transition: all 0.2s ease;
+        }
+        .chunk-card:hover {
+            background: #e8f4f8;
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            display: block;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        .instructions {
+            background: #e8f6f3;
+            border: 1px solid #16a085;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .print-workflow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .workflow-column h4 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .workflow-step {
+            padding: 10px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="document-title">${this.title}</h1>
+        <p>Professionelle Dokumenten-Generation mit HTML & PDF Export</p>
+        <p><strong>Generiert:</strong> ${new Date().toLocaleString('de-DE')}</p>
+    </div>
+
+    <div class="format-tabs">
+        <div class="format-tab pdf">
+            <div class="format-title">📕 PDF Format</div>
+            <p>Print-ready PDF Dateien</p>
+            <p><strong>${chunkPdfs ? chunkFiles.length + 1 : 0}</strong> PDF-Dateien</p>
+            <p><strong>${totalPdfSize}</strong> KB Gesamt</p>
+        </div>
+        <div class="format-tab html">
+            <div class="format-title">🌐 HTML Format</div>
+            <p>Browser-ready HTML Dateien</p>
+            <p><strong>${chunkFiles.length + 1}</strong> HTML-Dateien</p>
+            <p><strong>${totalHtmlSize}</strong> KB Gesamt</p>
+        </div>
+    </div>
+
+    <div class="toc-section">
+        <h2>📖 Inhaltsverzeichnis</h2>
+        <p>Das globale Inhaltsverzeichnis mit allen ${this.totalPages} Abschnitten und korrekten Seitenzahlen.</p>
+        <div>
+            <a href="${tocFile.fileName}" class="download-link html-link" target="_blank">
+                📄 TOC HTML (${tocFile.size} KB)
+            </a>
+            ${tocPdf ? `<a href="${tocPdf.fileName}" class="download-link pdf-link" target="_blank">
+                📕 TOC PDF (${tocPdf.size} KB)
+            </a>` : '<span style="color: #999;">PDF: Nicht verfügbar</span>'}
+        </div>
+    </div>
+
+    <div class="instructions">
+        <h2>🖨️ Druckanleitung</h2>
+        <div class="print-workflow">
+            <div class="workflow-column">
+                <h4>📕 PDF Workflow (Empfohlen)</h4>
+                <div class="workflow-step">1. TOC PDF herunterladen</div>
+                <div class="workflow-step">2. Alle Chunk-PDFs herunterladen</div>
+                <div class="workflow-step">3. In korrekter Reihenfolge drucken</div>
+                <div class="workflow-step">4. Zusammenheften</div>
+                <p><strong>Vorteil:</strong> Optimierte Dateien, konsistente Formatierung</p>
+            </div>
+            <div class="workflow-column">
+                <h4>🌐 HTML Workflow</h4>
+                <div class="workflow-step">1. TOC HTML im Browser öffnen</div>
+                <div class="workflow-step">2. Mit Browser drucken (Strg+P)</div>
+                <div class="workflow-step">3. Chunk-HTMLs einzeln drucken</div>
+                <div class="workflow-step">4. Zusammenheften</div>
+                <p><strong>Vorteil:</strong> Keine Extra-Software nötig</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-number">${this.totalPages}</span>
+            <span class="stat-label">Content-Seiten</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">${this.chunks.length}</span>
+            <span class="stat-label">Chunks</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">${this.chunkSize}</span>
+            <span class="stat-label">Seiten/Chunk</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">${this.tocPages + this.totalPages}</span>
+            <span class="stat-label">Gesamt-Seiten</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">${totalHtmlSize}</span>
+            <span class="stat-label">HTML KB</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">${totalPdfSize}</span>
+            <span class="stat-label">PDF KB</span>
+        </div>
+    </div>
+
+    <h2>📄 Content-Chunks</h2>
+    <div class="chunks-grid">
+        ${chunkFiles.map((chunkFile, index) => {
+          const pdfFile = chunkPdfs ? chunkPdfs.find(pdf => pdf.chunk.number === chunkFile.chunk.number) : null;
+          return `
+            <div class="chunk-card">
+                <h3>Teil ${chunkFile.chunk.number}/${this.chunks.length}</h3>
+                <p><strong>Seiten:</strong> ${chunkFile.chunk.startPage} - ${chunkFile.chunk.endPage}</p>
+                <p><strong>Abschnitte:</strong> ${chunkFile.chunk.pages.length}</p>
+                <div>
+                    <a href="${chunkFile.fileName}" class="download-link html-link" target="_blank">
+                        📄 HTML (${chunkFile.size} KB)
+                    </a>
+                    ${pdfFile ? `<a href="${pdfFile.fileName}" class="download-link pdf-link" target="_blank">
+                        📕 PDF (${pdfFile.size} KB)
+                    </a>` : '<div style="color: #999; font-size: 12px;">PDF: Nicht verfügbar</div>'}
+                </div>
+            </div>
+          `;
+        }).join('')}
+    </div>
+
+    <div class="footer">
+        <p><strong>💡 Tipp:</strong> PDF-Dateien sind optimiert für professionellen Druck mit korrekter Seitennummerierung.</p>
+        <p><strong>🔗 HTML-Dateien:</strong> Perfekt für Browser-Ansicht mit sichtbaren Seitenzahlen.</p>
+        <p><strong>⚡ Performance:</strong> Chunks ermöglichen schnelles Laden und individuelle Bearbeitung.</p>
+    </div>
+</body>
+</html>`;
+
+    const indexPath = path.join(outputDir, 'index.html');
+    await fs.writeFile(indexPath, indexHTML, 'utf8');
+
+    console.log(`   ✅ Enhanced index.html mit PDF-Links erstellt`);
     return indexPath;
   }
 }
