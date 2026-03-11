@@ -8,6 +8,7 @@ const path = require('path');
 const Document = require('./components/Document.js');
 const { pageContents } = require('./content/pages.js');
 const { testPages300 } = require('./content/test-content-300.js');
+const DocumentChunker = require('./chunker.js');
 
 /**
  * HTML Template für das generierte Dokument
@@ -166,26 +167,129 @@ const generateDocument = async (testMode = false) => {
 };
 
 /**
+ * Generiert ein in Chunks aufgeteiltes Dokument
+ */
+const generateChunkedDocument = async (testMode = false, chunkSize = 50) => {
+  console.log('🚀 Starte CHUNKED Dokumentgenerierung...');
+  console.log(`📑 Chunk-Größe: ${chunkSize} Seiten pro Datei`);
+  if (testMode) {
+    console.log('🧪 TEST MODE: Generiere 300-Seiten Dokument in Chunks');
+  }
+  console.log('=' .repeat(60));
+
+  try {
+    // 1. Content und Titel bestimmen
+    const contents = testMode ? testPages300 : pageContents;
+    const title = testMode ? "Test Dokument - 300 Seiten" : "Unternehmensbericht Q1 2024";
+
+    console.log(`📄 Content-Seiten: ${contents.length}`);
+    const totalChunks = Math.ceil(contents.length / chunkSize);
+    console.log(`📑 Content-Chunks: ${totalChunks} (je ${chunkSize} Seiten)`);
+
+    // 2. CSS Inhalt laden
+    console.log('1️⃣  Lade CSS Styles...');
+    const cssContent = await loadCSSContent();
+
+    // 3. Output-Verzeichnis vorbereiten
+    const outputDir = path.join(__dirname, '..', 'output', 'chunks');
+    await fs.ensureDir(outputDir);
+    console.log(`📁 Output: ${outputDir}`);
+
+    // 4. Chunker erstellen
+    console.log('2️⃣  Erstelle Chunker...');
+    const chunker = new DocumentChunker(contents, title, chunkSize);
+    console.log(`📖 TOC wird ${chunker.tocPages} Seiten haben`);
+    console.log(`📄 Content startet ab Seite ${chunker.tocPages + 1}`);
+
+    // 5. Globales TOC generieren
+    console.log('3️⃣  Erstelle globales TOC...');
+    const tocFile = await chunker.generateGlobalTOC(cssContent, outputDir);
+
+    // 6. Content-Chunks generieren
+    console.log('4️⃣  Erstelle Content-Chunks...');
+    const chunkFiles = await chunker.generateAllChunks(cssContent, outputDir);
+
+    // 7. Index-Seite generieren
+    console.log('5️⃣  Erstelle Index-Seite...');
+    const indexPath = await chunker.generateIndexPage(chunkFiles, tocFile, outputDir);
+
+    // Erfolgreiche Generierung
+    console.log('=' .repeat(60));
+    console.log('🎉 CHUNKED Dokumentgenerierung erfolgreich abgeschlossen!');
+    console.log(`📁 Output-Verzeichnis: ${outputDir}`);
+    console.log(`🔗 Index-Seite: ${indexPath}`);
+
+    // Statistiken
+    const totalDocumentPages = chunker.tocPages + contents.length;
+    console.log('\n📋 Zusammenfassung:');
+    console.log(`   • Gesamt-Seitenzahl: ${totalDocumentPages} (${chunker.tocPages} TOC + ${contents.length} Content)`);
+    console.log(`   • TOC-Datei: ${tocFile.fileName} (${tocFile.size} KB)`);
+    console.log(`   • Content-Chunks: ${chunkFiles.length} (je ${chunkSize} Seiten)`);
+    console.log(`   • Seitennummerierung: TOC 1-${chunker.tocPages}, Content ${chunker.tocPages + 1}-${totalDocumentPages}`);
+    console.log(`   • Gesamtgröße: ${Math.round(chunkFiles.reduce((sum, f) => sum + f.size, 0) + tocFile.size)} KB`);
+    console.log(`   • Generiert: ${new Date().toLocaleString('de-DE')}`);
+    console.log(`   • Druckreihenfolge: TOC → Teil 1 → Teil 2 → ... → Teil ${chunkFiles.length}`);
+
+    return {
+      indexPath,
+      chunkFiles,
+      tocFile,
+      outputDir
+    };
+
+  } catch (error) {
+    console.error('❌ Fehler bei der CHUNKED Dokumentgenerierung:', error);
+    console.error('Stack Trace:', error.stack);
+    process.exit(1);
+  }
+};
+
+/**
  * CLI Ausführung
  */
 if (require.main === module) {
-  // Check for test mode argument
+  // Parse command line arguments
   const testMode = process.argv.includes('--300pages') || process.argv.includes('--large');
+  const chunkMode = process.argv.includes('--chunks') || process.argv.includes('--split');
 
-  generateDocument(testMode)
-    .then(outputPath => {
-      console.log(`\n🌐 Um das Dokument anzuzeigen:`);
-      console.log(`   open "${outputPath}"`);
-      console.log(`   oder öffne die Datei manuell in einem Browser.\n`);
+  // Parse chunk size
+  const chunkSizeArg = process.argv.find(arg => arg.startsWith('--chunk-size='));
+  const chunkSize = chunkSizeArg ? parseInt(chunkSizeArg.split('=')[1]) : 50;
 
-      if (testMode) {
-        console.log(`⚡ Test-Modus: Öffnen könnte bei 300 Seiten etwas dauern...`);
-      }
-    })
-    .catch(error => {
-      console.error('Fataler Fehler:', error);
-      process.exit(1);
-    });
+  if (chunkMode) {
+    // Chunked document generation
+    generateChunkedDocument(testMode, chunkSize)
+      .then(result => {
+        console.log(`\n🌐 Um das Dokument anzuzeigen:`);
+        console.log(`   open "${result.indexPath}"`);
+        console.log(`   oder öffne die Index-Seite manuell im Browser.\n`);
+
+        console.log(`📂 Einzelne Chunks:`);
+        result.chunkFiles.forEach(chunk => {
+          console.log(`   • ${chunk.fileName} (Seiten ${chunk.chunk.startPage}-${chunk.chunk.endPage})`);
+        });
+      })
+      .catch(error => {
+        console.error('Fataler Fehler:', error);
+        process.exit(1);
+      });
+  } else {
+    // Standard single-file generation
+    generateDocument(testMode)
+      .then(outputPath => {
+        console.log(`\n🌐 Um das Dokument anzuzeigen:`);
+        console.log(`   open "${outputPath}"`);
+        console.log(`   oder öffne die Datei manuell in einem Browser.\n`);
+
+        if (testMode) {
+          console.log(`⚡ Test-Modus: Öffnen könnte bei 300 Seiten etwas dauern...`);
+        }
+      })
+      .catch(error => {
+        console.error('Fataler Fehler:', error);
+        process.exit(1);
+      });
+  }
 }
 
 module.exports = { generateDocument };
