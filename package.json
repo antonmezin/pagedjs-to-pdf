@@ -1,0 +1,32 @@
+{
+  "name": "pagedjs-react-document-generator",
+  "version": "1.0.0",
+  "description": "Generate paginated HTML documents using PagedJS and React",
+  "main": "src/generator.js",
+  "scripts": {
+    "generate": "babel-node src/generator.js",
+    "dev": "babel-node src/generator.js && open output/document.html"
+  },
+  "dependencies": {
+    "fs-extra": "^11.1.1",
+    "jsdom": "^22.1.0",
+    "pagedjs": "^0.4.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/node": "^7.29.0",
+    "@babel/preset-react": "^7.22.0",
+    "@babel/register": "^7.22.0"
+  },
+  "keywords": [
+    "pagedjs",
+    "react",
+    "document",
+    "pdf",
+    "pagination"
+  ],
+  "author": "",
+  "license": "MIT"
+}
