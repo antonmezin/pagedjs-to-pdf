@@ -44,11 +44,7 @@ const Page = ({ id, title, content, pageNumber, totalPages }) => {
         {renderContent()}
       </div>
 
-      <div className="page-footer">
-        <div className="page-info">
-          Seite {pageNumber} von {totalPages}
-        </div>
-      </div>
+      {/* Page numbering handled by CSS @page rules - no footer needed */}
     </div>
   );
 };

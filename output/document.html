@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="de"><head>
+<!DOCTYPE html>
+<html lang="de">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="PagedJS React Document Generator">
@@ -20,7 +22,7 @@
   margin: 25mm 20mm 25mm 20mm;
 
   @top-right {
-    content: "Seite " counter(page);
+    content: "Seite " counter(page) " von " counter(pages);
     font-family: 'Arial', sans-serif;
     font-size: 10pt;
     color: #666;
@@ -34,13 +36,19 @@
   }
 }
 
-/* Title Page - No headers/footers */
+/* Title Page - Page 1 with numbering */
 @page title {
   @top-right {
-    content: "";
+    content: "Seite " counter(page) " von " counter(pages);
+    font-family: 'Arial', sans-serif;
+    font-size: 10pt;
+    color: #666;
   }
   @bottom-center {
-    content: "";
+    content: "Unternehmensbericht Q1 2024";
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    color: #888;
   }
   margin-top: 50mm;
 }
@@ -48,7 +56,10 @@
 /* Table of Contents Page */
 @page toc {
   @top-right {
-    content: "";
+    content: "Seite " counter(page) " von " counter(pages);
+    font-family: 'Arial', sans-serif;
+    font-size: 10pt;
+    color: #666;
   }
   @bottom-center {
     content: "Inhaltsverzeichnis";
@@ -60,10 +71,8 @@
 
 /* Content Pages */
 @page content {
-  counter-increment: page-content;
-
   @top-right {
-    content: "Seite " counter(page-content);
+    content: "Seite " counter(page) " von " counter(pages);
     font-family: 'Arial', sans-serif;
     font-size: 10pt;
     color: #666;
@@ -258,9 +267,22 @@ strong {
   flex-shrink: 0;
 }
 
+/* CSS target-counter() for automatic page numbers */
+.toc-link::after {
+  content: target-counter(attr(href), page);
+  color: #7f8c8d;
+  font-weight: bold;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .toc-link:hover {
   color: #3498db;
   text-decoration: underline;
+}
+
+.toc-link:hover::after {
+  color: #3498db;
 }
 
 .toc-dots {
@@ -270,12 +292,6 @@ strong {
   height: 1px;
   align-self: flex-end;
   margin-bottom: 4pt;
-}
-
-.toc-page-number {
-  color: #7f8c8d;
-  font-weight: bold;
-  flex-shrink: 0;
 }
 
 .toc-footer {
@@ -325,13 +341,9 @@ strong {
   margin-bottom: 20pt;
 }
 
+/* Page footer removed - page numbering handled by CSS @page rules */
 .page-footer {
-  margin-top: auto;
-  text-align: right;
-  font-size: 9pt;
-  color: #95a5a6;
-  border-top: 1px solid #ecf0f1;
-  padding-top: 8pt;
+  display: none; /* Not needed anymore */
 }
 
 /* ============================================
@@ -457,46 +469,10 @@ strong {
     </style>
 
     <!-- Additional PagedJS Configuration -->
-    <!-- <script>
-        window.PagedConfig = {
-            before: () => {
-                console.log('PagedJS: Starting pagination...');
-            },
-            after: () => {
-                console.log('PagedJS: Pagination complete!');
-                // Fix TOC page numbers after pagination
-                updateTOCPageNumbers();
-            }
-        };
-
-        // Function to update TOC page numbers using PagedJS counters
-        function updateTOCPageNumbers() {
-            const tocEntries = document.querySelectorAll('.toc-page-number');
-            tocEntries.forEach(entry => {
-                const targetId = entry.getAttribute('data-page-ref');
-                const targetElement = document.getElementById(targetId);
-                if (targetElement) {
-                    // Use PagedJS to get the actual page number
-                    const pageElement = targetElement.closest('.pagedjs_page');
-                    if (pageElement) {
-                        const pageNumber = pageElement.getAttribute('data-page-number') ||
-                                         pageElement.querySelector('.pagedjs_margin-top-right')?.textContent?.match(/\d+/)?.[0] ||
-                                         entry.textContent;
-                        entry.textContent = pageNumber;
-                    }
-                }
-            });
-        }
-
-        // Note: TOC links use standard HTML anchors, no JavaScript needed
-    </script> -->
-<div class="document-meta-info" style="display: none;">
-    <meta name="total-pages" content="10">
-    <meta name="generation-time" content="2026-03-11T12:58:33.661Z">
-    <meta name="generator-version" content="1.0.0">
-  </div></head>
+    <!-- PagedJS handles pagination automatically - no custom JavaScript needed -->
+</head>
 <body>
-    <div class="document"><div class="title-page" style="page:title"><div class="title-content"><h1 class="document-title">Unternehmensbericht Q1 2024</h1><div class="document-meta"><p class="generation-date">Erstellt am: 11.3.2026</p><p class="document-info">Automatisch generiert mit PagedJS und React</p></div></div></div><div class="page-break"></div><div class="toc-page" style="page:toc"><div class="toc-header"><h1 class="toc-title">Inhaltsverzeichnis</h1></div><div class="toc-content"><nav class="toc-nav"><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">1.</span><a href="#introduction" class="toc-link">Einführung</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="introduction">1</span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">2.</span><a href="#market-analysis" class="toc-link">Marktanalyse Q1 2024</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="market-analysis">2</span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">3.</span><a href="#product-overview" class="toc-link">Produktübersicht 2024</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="product-overview">3</span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">4.</span><a href="#financial-data" class="toc-link">Finanzdaten Übersicht</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="financial-data">4</span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">5.</span><a href="#team-structure" class="toc-link">Organisationsstruktur</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="team-structure">5</span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">6.</span><a href="#technology-stack" class="toc-link">Technologie-Stack</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="technology-stack">6</span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">7.</span><a href="#customer-feedback" class="toc-link">Kundenfeedback Analyse</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="customer-feedback">7</span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">8.</span><a href="#market-trends" class="toc-link">Markttrends 2024</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="market-trends">8</span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">9.</span><a href="#project-timeline" class="toc-link">Projektplanung 2024</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="project-timeline">9</span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">10.</span><a href="#conclusions" class="toc-link">Fazit und Ausblick</a><span class="toc-dots"></span><span class="toc-page-number" data-page-ref="conclusions">10</span></div></div></nav><div class="toc-footer"><p class="toc-info">Dieses Dokument enthält 10 Hauptabschnitte.</p><p class="toc-generated">Inhaltsverzeichnis automatisch generiert am 11.3.2026</p></div></div></div><div class="page-break"></div><div class="content-pages"><div id="introduction" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Einführung</h1></div><div class="page-content"><div class="text-content">
+    <div class="document"><div class="title-page" style="page:title"><div class="title-content"><h1 class="document-title">Unternehmensbericht Q1 2024</h1><div class="document-meta"><p class="generation-date">Erstellt am: 11.3.2026</p><p class="document-info">Automatisch generiert mit PagedJS und React</p></div></div></div><div class="page-break"></div><div class="toc-page" style="page:toc"><div class="toc-header"><h1 class="toc-title">Inhaltsverzeichnis</h1></div><div class="toc-content"><nav class="toc-nav"><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">1.</span><a href="#introduction" class="toc-link">Einführung</a><span class="toc-dots"></span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">2.</span><a href="#market-analysis" class="toc-link">Marktanalyse Q1 2024</a><span class="toc-dots"></span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">3.</span><a href="#product-overview" class="toc-link">Produktübersicht 2024</a><span class="toc-dots"></span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">4.</span><a href="#financial-data" class="toc-link">Finanzdaten Übersicht</a><span class="toc-dots"></span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">5.</span><a href="#team-structure" class="toc-link">Organisationsstruktur</a><span class="toc-dots"></span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">6.</span><a href="#technology-stack" class="toc-link">Technologie-Stack</a><span class="toc-dots"></span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">7.</span><a href="#customer-feedback" class="toc-link">Kundenfeedback Analyse</a><span class="toc-dots"></span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">8.</span><a href="#market-trends" class="toc-link">Markttrends 2024</a><span class="toc-dots"></span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">9.</span><a href="#project-timeline" class="toc-link">Projektplanung 2024</a><span class="toc-dots"></span></div></div><div class="toc-entry"><div class="toc-entry-content"><span class="toc-number">10.</span><a href="#conclusions" class="toc-link">Fazit und Ausblick</a><span class="toc-dots"></span></div></div></nav><div class="toc-footer"><p class="toc-info">Dieses Dokument enthält 10 Hauptabschnitte.</p><p class="toc-generated">Inhaltsverzeichnis automatisch generiert am 11.3.2026</p></div></div></div><div class="page-break"></div><div class="content-pages"><div id="introduction" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Einführung</h1></div><div class="page-content"><div class="text-content">
         <h2>Willkommen zu unserem Dokumentationssystem</h2>
         <p>Dieses Dokument wurde automatisch generiert unter Verwendung von PagedJS und React. Es demonstriert die Möglichkeit, professionelle, druckfertige Dokumente direkt aus strukturierten Daten zu erstellen.</p>
 
@@ -508,7 +484,7 @@ strong {
         </ul>
 
         <p>Jede Seite dieses Dokuments wurde sorgfältig gestaltet, um sowohl digital als auch gedruckt optimal lesbar zu sein.</p>
-      </div></div><div class="page-footer"><div class="page-info">Seite 1 von 10</div></div></div><div class="page-break"></div><div id="market-analysis" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Marktanalyse Q1 2024</h1></div><div class="page-content"><div class="table-container "><table class="content-table"><caption class="table-caption">Verkaufszahlen nach Regionen</caption><thead class="table-header"><tr><th class="table-header-cell">Region</th><th class="table-header-cell">Q1 Verkäufe</th><th class="table-header-cell">Veränderung (%)</th><th class="table-header-cell">Zielerreichung</th></tr></thead><tbody class="table-body"><tr class="table-row"><td class="table-cell">Europa</td><td class="table-cell">€2.450.000</td><td class="table-cell">+12.5%</td><td class="table-cell">108%</td></tr><tr class="table-row"><td class="table-cell">Nordamerika</td><td class="table-cell">€3.200.000</td><td class="table-cell">+8.3%</td><td class="table-cell">95%</td></tr><tr class="table-row"><td class="table-cell">Asien-Pazifik</td><td class="table-cell">€1.850.000</td><td class="table-cell">+25.7%</td><td class="table-cell">126%</td></tr><tr class="table-row"><td class="table-cell">Lateinamerika</td><td class="table-cell">€680.000</td><td class="table-cell">-3.2%</td><td class="table-cell">87%</td></tr><tr class="table-row"><td class="table-cell">Afrika/Naher Osten</td><td class="table-cell">€520.000</td><td class="table-cell">+15.8%</td><td class="table-cell">102%</td></tr></tbody></table><div class="table-footer"><small class="table-meta">5 Einträge</small></div></div></div><div class="page-footer"><div class="page-info">Seite 2 von 10</div></div></div><div class="page-break"></div><div id="product-overview" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Produktübersicht 2024</h1></div><div class="page-content"><div class="mixed-content">
+      </div></div></div><div class="page-break"></div><div id="market-analysis" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Marktanalyse Q1 2024</h1></div><div class="page-content"><div class="table-container "><table class="content-table"><caption class="table-caption">Verkaufszahlen nach Regionen</caption><thead class="table-header"><tr><th class="table-header-cell">Region</th><th class="table-header-cell">Q1 Verkäufe</th><th class="table-header-cell">Veränderung (%)</th><th class="table-header-cell">Zielerreichung</th></tr></thead><tbody class="table-body"><tr class="table-row"><td class="table-cell">Europa</td><td class="table-cell">€2.450.000</td><td class="table-cell">+12.5%</td><td class="table-cell">108%</td></tr><tr class="table-row"><td class="table-cell">Nordamerika</td><td class="table-cell">€3.200.000</td><td class="table-cell">+8.3%</td><td class="table-cell">95%</td></tr><tr class="table-row"><td class="table-cell">Asien-Pazifik</td><td class="table-cell">€1.850.000</td><td class="table-cell">+25.7%</td><td class="table-cell">126%</td></tr><tr class="table-row"><td class="table-cell">Lateinamerika</td><td class="table-cell">€680.000</td><td class="table-cell">-3.2%</td><td class="table-cell">87%</td></tr><tr class="table-row"><td class="table-cell">Afrika/Naher Osten</td><td class="table-cell">€520.000</td><td class="table-cell">+15.8%</td><td class="table-cell">102%</td></tr></tbody></table><div class="table-footer"><small class="table-meta">5 Einträge</small></div></div></div></div><div class="page-break"></div><div id="product-overview" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Produktübersicht 2024</h1></div><div class="page-content"><div class="mixed-content">
         <h2>Unsere Produktfamilien</h2>
         <p>Im Jahr 2024 haben wir unser Produktportfolio erheblich erweitert. Die folgende Übersicht zeigt die wichtigsten Entwicklungen:</p>
 
@@ -520,7 +496,7 @@ strong {
 
         <h3>Innovation Pipeline</h3>
         <p>Für 2025 planen wir die Einführung von drei neuen Produktkategorien, die auf künstlicher Intelligenz und maschinellem Lernen basieren.</p>
-      </div></div><div class="page-footer"><div class="page-info">Seite 3 von 10</div></div></div><div class="page-break"></div><div id="financial-data" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Finanzdaten Übersicht</h1></div><div class="page-content"><div class="table-container "><table class="content-table"><caption class="table-caption">Quartalsvergleich der Hauptkennzahlen</caption><thead class="table-header"><tr><th class="table-header-cell">Kennzahl</th><th class="table-header-cell">Q4 2023</th><th class="table-header-cell">Q1 2024</th><th class="table-header-cell">Veränderung</th></tr></thead><tbody class="table-body"><tr class="table-row"><td class="table-cell">Umsatz (€)</td><td class="table-cell">8.950.000</td><td class="table-cell">9.240.000</td><td class="table-cell">+3.2%</td></tr><tr class="table-row"><td class="table-cell">Bruttogewinn (€)</td><td class="table-cell">3.580.000</td><td class="table-cell">3.850.000</td><td class="table-cell">+7.5%</td></tr><tr class="table-row"><td class="table-cell">Betriebskosten (€)</td><td class="table-cell">2.100.000</td><td class="table-cell">2.180.000</td><td class="table-cell">+3.8%</td></tr><tr class="table-row"><td class="table-cell">EBITDA (€)</td><td class="table-cell">1.480.000</td><td class="table-cell">1.670.000</td><td class="table-cell">+12.8%</td></tr><tr class="table-row"><td class="table-cell">Nettogewinn (€)</td><td class="table-cell">980.000</td><td class="table-cell">1.120.000</td><td class="table-cell">+14.3%</td></tr><tr class="table-row"><td class="table-cell">Cashflow (€)</td><td class="table-cell">1.200.000</td><td class="table-cell">1.380.000</td><td class="table-cell">+15.0%</td></tr></tbody></table><div class="table-footer"><small class="table-meta">6 Einträge</small></div></div></div><div class="page-footer"><div class="page-info">Seite 4 von 10</div></div></div><div class="page-break"></div><div id="team-structure" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Organisationsstruktur</h1></div><div class="page-content"><div class="mixed-content">
+      </div></div></div><div class="page-break"></div><div id="financial-data" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Finanzdaten Übersicht</h1></div><div class="page-content"><div class="table-container "><table class="content-table"><caption class="table-caption">Quartalsvergleich der Hauptkennzahlen</caption><thead class="table-header"><tr><th class="table-header-cell">Kennzahl</th><th class="table-header-cell">Q4 2023</th><th class="table-header-cell">Q1 2024</th><th class="table-header-cell">Veränderung</th></tr></thead><tbody class="table-body"><tr class="table-row"><td class="table-cell">Umsatz (€)</td><td class="table-cell">8.950.000</td><td class="table-cell">9.240.000</td><td class="table-cell">+3.2%</td></tr><tr class="table-row"><td class="table-cell">Bruttogewinn (€)</td><td class="table-cell">3.580.000</td><td class="table-cell">3.850.000</td><td class="table-cell">+7.5%</td></tr><tr class="table-row"><td class="table-cell">Betriebskosten (€)</td><td class="table-cell">2.100.000</td><td class="table-cell">2.180.000</td><td class="table-cell">+3.8%</td></tr><tr class="table-row"><td class="table-cell">EBITDA (€)</td><td class="table-cell">1.480.000</td><td class="table-cell">1.670.000</td><td class="table-cell">+12.8%</td></tr><tr class="table-row"><td class="table-cell">Nettogewinn (€)</td><td class="table-cell">980.000</td><td class="table-cell">1.120.000</td><td class="table-cell">+14.3%</td></tr><tr class="table-row"><td class="table-cell">Cashflow (€)</td><td class="table-cell">1.200.000</td><td class="table-cell">1.380.000</td><td class="table-cell">+15.0%</td></tr></tbody></table><div class="table-footer"><small class="table-meta">6 Einträge</small></div></div></div></div><div class="page-break"></div><div id="team-structure" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Organisationsstruktur</h1></div><div class="page-content"><div class="mixed-content">
         <h2>Unser Team im Überblick</h2>
         <p>Mit über 250 Mitarbeitern weltweit sind wir ein mittelständisches Unternehmen mit internationaler Ausrichtung.</p>
 
@@ -535,7 +511,7 @@ strong {
 
         <h3>Operations</h3>
         <p>Das Operations-Team sorgt für den reibungslosen Betrieb aller Systeme und Prozesse.</p>
-      </div></div><div class="page-footer"><div class="page-info">Seite 5 von 10</div></div></div><div class="page-break"></div><div id="technology-stack" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Technologie-Stack</h1></div><div class="page-content"><div class="table-container "><table class="content-table"><caption class="table-caption">Verwendete Technologien und Frameworks</caption><thead class="table-header"><tr><th class="table-header-cell">Kategorie</th><th class="table-header-cell">Technologie</th><th class="table-header-cell">Version</th><th class="table-header-cell">Status</th></tr></thead><tbody class="table-body"><tr class="table-row"><td class="table-cell">Frontend</td><td class="table-cell">React</td><td class="table-cell">18.2.0</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Frontend</td><td class="table-cell">TypeScript</td><td class="table-cell">5.0.4</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Backend</td><td class="table-cell">Node.js</td><td class="table-cell">18.16.0</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Backend</td><td class="table-cell">Express.js</td><td class="table-cell">4.18.2</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Datenbank</td><td class="table-cell">PostgreSQL</td><td class="table-cell">15.3</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Caching</td><td class="table-cell">Redis</td><td class="table-cell">7.0.11</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Cloud</td><td class="table-cell">AWS</td><td class="table-cell">Various</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Monitoring</td><td class="table-cell">DataDog</td><td class="table-cell">Latest</td><td class="table-cell">Produktiv</td></tr></tbody></table><div class="table-footer"><small class="table-meta">8 Einträge</small></div></div></div><div class="page-footer"><div class="page-info">Seite 6 von 10</div></div></div><div class="page-break"></div><div id="customer-feedback" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Kundenfeedback Analyse</h1></div><div class="page-content"><div class="mixed-content">
+      </div></div></div><div class="page-break"></div><div id="technology-stack" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Technologie-Stack</h1></div><div class="page-content"><div class="table-container "><table class="content-table"><caption class="table-caption">Verwendete Technologien und Frameworks</caption><thead class="table-header"><tr><th class="table-header-cell">Kategorie</th><th class="table-header-cell">Technologie</th><th class="table-header-cell">Version</th><th class="table-header-cell">Status</th></tr></thead><tbody class="table-body"><tr class="table-row"><td class="table-cell">Frontend</td><td class="table-cell">React</td><td class="table-cell">18.2.0</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Frontend</td><td class="table-cell">TypeScript</td><td class="table-cell">5.0.4</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Backend</td><td class="table-cell">Node.js</td><td class="table-cell">18.16.0</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Backend</td><td class="table-cell">Express.js</td><td class="table-cell">4.18.2</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Datenbank</td><td class="table-cell">PostgreSQL</td><td class="table-cell">15.3</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Caching</td><td class="table-cell">Redis</td><td class="table-cell">7.0.11</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Cloud</td><td class="table-cell">AWS</td><td class="table-cell">Various</td><td class="table-cell">Produktiv</td></tr><tr class="table-row"><td class="table-cell">Monitoring</td><td class="table-cell">DataDog</td><td class="table-cell">Latest</td><td class="table-cell">Produktiv</td></tr></tbody></table><div class="table-footer"><small class="table-meta">8 Einträge</small></div></div></div></div><div class="page-break"></div><div id="customer-feedback" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Kundenfeedback Analyse</h1></div><div class="page-content"><div class="mixed-content">
         <h2>Stimmen unserer Kunden</h2>
         <p>Das Kundenfeedback ist ein wichtiger Indikator für unseren Erfolg. Im ersten Quartal 2024 haben wir über 1.200 Kundenbewertungen gesammelt.</p>
 
@@ -554,7 +530,7 @@ strong {
           <li>Mobile App Verbesserungen (erwähnt in 18% der Feedbacks)</li>
           <li>Schnellere Ladezeiten (erwähnt in 15% der Feedbacks)</li>
         </ol>
-      </div></div><div class="page-footer"><div class="page-info">Seite 7 von 10</div></div></div><div class="page-break"></div><div id="market-trends" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Markttrends 2024</h1></div><div class="page-content"><div class="mixed-content">
+      </div></div></div><div class="page-break"></div><div id="market-trends" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Markttrends 2024</h1></div><div class="page-content"><div class="mixed-content">
         <h2>Wichtige Branchentrends</h2>
         <p>Der Markt entwickelt sich rasant weiter. Diese Trends prägen unsere Branche in 2024:</p>
 
@@ -569,7 +545,7 @@ strong {
 
         <h3>4. Remote-Work Tools</h3>
         <p>Die Nachfrage nach kollaborativen Remote-Work-Tools bleibt hoch, auch nach der Pandemie.</p>
-      </div></div><div class="page-footer"><div class="page-info">Seite 8 von 10</div></div></div><div class="page-break"></div><div id="project-timeline" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Projektplanung 2024</h1></div><div class="page-content"><div class="table-container "><table class="content-table"><caption class="table-caption">Wichtige Meilensteine und Termine</caption><thead class="table-header"><tr><th class="table-header-cell">Projekt</th><th class="table-header-cell">Start</th><th class="table-header-cell">Ende</th><th class="table-header-cell">Status</th><th class="table-header-cell">Verantwortlich</th></tr></thead><tbody class="table-body"><tr class="table-row"><td class="table-cell">Mobile App v3.0</td><td class="table-cell">01.01.2024</td><td class="table-cell">30.04.2024</td><td class="table-cell">Abgeschlossen</td><td class="table-cell">Team Alpha</td></tr><tr class="table-row"><td class="table-cell">KI-Integration Backend</td><td class="table-cell">15.02.2024</td><td class="table-cell">31.05.2024</td><td class="table-cell">In Bearbeitung</td><td class="table-cell">Team Beta</td></tr><tr class="table-row"><td class="table-cell">Cloud Migration Phase 2</td><td class="table-cell">01.03.2024</td><td class="table-cell">30.06.2024</td><td class="table-cell">In Bearbeitung</td><td class="table-cell">Team Gamma</td></tr><tr class="table-row"><td class="table-cell">Security Audit</td><td class="table-cell">01.04.2024</td><td class="table-cell">15.05.2024</td><td class="table-cell">Geplant</td><td class="table-cell">Ext. Partner</td></tr><tr class="table-row"><td class="table-cell">Performance Optimization</td><td class="table-cell">01.05.2024</td><td class="table-cell">31.07.2024</td><td class="table-cell">Geplant</td><td class="table-cell">Team Delta</td></tr><tr class="table-row"><td class="table-cell">New Dashboard UI</td><td class="table-cell">15.06.2024</td><td class="table-cell">30.09.2024</td><td class="table-cell">Geplant</td><td class="table-cell">Team Alpha</td></tr></tbody></table><div class="table-footer"><small class="table-meta">6 Einträge</small></div></div></div><div class="page-footer"><div class="page-info">Seite 9 von 10</div></div></div><div class="page-break"></div><div id="conclusions" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Fazit und Ausblick</h1></div><div class="page-content"><div class="mixed-content">
+      </div></div></div><div class="page-break"></div><div id="project-timeline" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Projektplanung 2024</h1></div><div class="page-content"><div class="table-container "><table class="content-table"><caption class="table-caption">Wichtige Meilensteine und Termine</caption><thead class="table-header"><tr><th class="table-header-cell">Projekt</th><th class="table-header-cell">Start</th><th class="table-header-cell">Ende</th><th class="table-header-cell">Status</th><th class="table-header-cell">Verantwortlich</th></tr></thead><tbody class="table-body"><tr class="table-row"><td class="table-cell">Mobile App v3.0</td><td class="table-cell">01.01.2024</td><td class="table-cell">30.04.2024</td><td class="table-cell">Abgeschlossen</td><td class="table-cell">Team Alpha</td></tr><tr class="table-row"><td class="table-cell">KI-Integration Backend</td><td class="table-cell">15.02.2024</td><td class="table-cell">31.05.2024</td><td class="table-cell">In Bearbeitung</td><td class="table-cell">Team Beta</td></tr><tr class="table-row"><td class="table-cell">Cloud Migration Phase 2</td><td class="table-cell">01.03.2024</td><td class="table-cell">30.06.2024</td><td class="table-cell">In Bearbeitung</td><td class="table-cell">Team Gamma</td></tr><tr class="table-row"><td class="table-cell">Security Audit</td><td class="table-cell">01.04.2024</td><td class="table-cell">15.05.2024</td><td class="table-cell">Geplant</td><td class="table-cell">Ext. Partner</td></tr><tr class="table-row"><td class="table-cell">Performance Optimization</td><td class="table-cell">01.05.2024</td><td class="table-cell">31.07.2024</td><td class="table-cell">Geplant</td><td class="table-cell">Team Delta</td></tr><tr class="table-row"><td class="table-cell">New Dashboard UI</td><td class="table-cell">15.06.2024</td><td class="table-cell">30.09.2024</td><td class="table-cell">Geplant</td><td class="table-cell">Team Alpha</td></tr></tbody></table><div class="table-footer"><small class="table-meta">6 Einträge</small></div></div></div></div><div class="page-break"></div><div id="conclusions" class="page" style="page:content"><div class="page-header"><h1 class="page-title">Fazit und Ausblick</h1></div><div class="page-content"><div class="mixed-content">
         <h2>Zusammenfassung der Ergebnisse</h2>
         <p>Das erste Quartal 2024 war geprägt von solidem Wachstum und strategischen Fortschritten. Unsere wichtigsten Erfolge:</p>
 
@@ -591,6 +567,6 @@ strong {
         </ul>
 
         <p>Mit diesen soliden Grundlagen sind wir gut positioniert für ein erfolgreiches Jahr 2024.</p>
-      </div></div><div class="page-footer"><div class="page-info">Seite 10 von 10</div></div></div></div></div>
-
-</body></html>
+      </div></div></div></div></div>
+</body>
+</html>

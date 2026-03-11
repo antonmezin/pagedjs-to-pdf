@@ -1,12 +1,13 @@
 const React = require('react');
 const ReactDOMServer = require('react-dom/server');
-const { JSDOM } = require('jsdom');
 const fs = require('fs-extra');
 const path = require('path');
+// JSDOM no longer needed - CSS target-counter() handles everything
 
 // Import components and data
 const Document = require('./components/Document.js');
 const { pageContents } = require('./content/pages.js');
+const { testPages300 } = require('./content/test-content-300.js');
 
 /**
  * HTML Template für das generierte Dokument
@@ -29,39 +30,7 @@ const createHTMLTemplate = (reactContent, cssContent) => {
     </style>
 
     <!-- Additional PagedJS Configuration -->
-    <script>
-        window.PagedConfig = {
-            before: () => {
-                console.log('PagedJS: Starting pagination...');
-            },
-            after: () => {
-                console.log('PagedJS: Pagination complete!');
-                // Fix TOC page numbers after pagination
-                updateTOCPageNumbers();
-            }
-        };
-
-        // Function to update TOC page numbers using PagedJS counters
-        function updateTOCPageNumbers() {
-            const tocEntries = document.querySelectorAll('.toc-page-number');
-            tocEntries.forEach(entry => {
-                const targetId = entry.getAttribute('data-page-ref');
-                const targetElement = document.getElementById(targetId);
-                if (targetElement) {
-                    // Use PagedJS to get the actual page number
-                    const pageElement = targetElement.closest('.pagedjs_page');
-                    if (pageElement) {
-                        const pageNumber = pageElement.getAttribute('data-page-number') ||
-                                         pageElement.querySelector('.pagedjs_margin-top-right')?.textContent?.match(/\\d+/)?.[0] ||
-                                         entry.textContent;
-                        entry.textContent = pageNumber;
-                    }
-                }
-            });
-        }
-
-        // Note: TOC links use standard HTML anchors, no JavaScript needed
-    </script>
+    <!-- PagedJS handles pagination automatically - no custom JavaScript needed -->
 </head>
 <body>
     ${reactContent}
@@ -85,20 +54,24 @@ const loadCSSContent = async () => {
 /**
  * Erstellt das React Document und rendert es zu HTML
  */
-const renderReactDocument = () => {
+const renderReactDocument = (testMode = false) => {
   console.log('🔄 Rendering React components...');
 
+  // Wähle Content basierend auf Modus
+  const contents = testMode ? testPages300 : pageContents;
+  const title = testMode ? "Test Dokument - 300 Seiten" : "Unternehmensbericht Q1 2024";
+
   // Validierung der Eingangsdaten
-  if (!pageContents || !Array.isArray(pageContents) || pageContents.length === 0) {
+  if (!contents || !Array.isArray(contents) || contents.length === 0) {
     throw new Error('Keine gültigen Seiten-Inhalte gefunden!');
   }
 
-  console.log(`📄 Gefunden: ${pageContents.length} Seiten zur Verarbeitung`);
+  console.log(`📄 Gefunden: ${contents.length} Seiten zur Verarbeitung`);
 
   // React Document Component erstellen
   const documentElement = React.createElement(Document, {
-    contents: pageContents,
-    title: "Unternehmensbericht Q1 2024"
+    contents: contents,
+    title: title
   });
 
   // Server-side rendering
@@ -109,38 +82,17 @@ const renderReactDocument = () => {
 };
 
 /**
- * Verarbeitet das HTML mit JSDOM für erweiterte DOM-Manipulationen
+ * JSDOM processing no longer needed - CSS target-counter() handles TOC automatically
+ * Keeping for potential future extensions
  */
-const processHTMLWithJSDOM = (html) => {
-  console.log('🔄 Verarbeitung mit JSDOM...');
-
-  const dom = new JSDOM(html);
-  const document = dom.window.document;
-
-  // Zusätzliche DOM-Manipulationen können hier durchgeführt werden
-  // z.B. dynamische Inhalte, Berechnungen, etc.
-
-  // Füge Meta-Informationen hinzu
-  const metaInfo = document.createElement('div');
-  metaInfo.className = 'document-meta-info';
-  metaInfo.style.display = 'none';
-  metaInfo.innerHTML = `
-    <meta name="total-pages" content="${pageContents.length}">
-    <meta name="generation-time" content="${new Date().toISOString()}">
-    <meta name="generator-version" content="1.0.0">
-  `;
-  document.head.appendChild(metaInfo);
-
-  console.log('✅ JSDOM Verarbeitung abgeschlossen');
-  return dom.serialize();
-};
+// const processHTMLWithJSDOM = (html) => { /* removed */ };
 
 /**
  * Speichert das generierte HTML in eine Datei
  */
-const saveHTMLDocument = async (htmlContent) => {
+const saveHTMLDocument = async (htmlContent, fileName = 'document.html') => {
   const outputDir = path.join(__dirname, '..', 'output');
-  const outputPath = path.join(outputDir, 'document.html');
+  const outputPath = path.join(outputDir, fileName);
 
   // Stelle sicher, dass das Output-Verzeichnis existiert
   await fs.ensureDir(outputDir);
@@ -153,7 +105,12 @@ const saveHTMLDocument = async (htmlContent) => {
   // Zeige Dateigröße
   const stats = await fs.stat(outputPath);
   const fileSizeKB = Math.round(stats.size / 1024);
-  console.log(`📊 Dateigröße: ${fileSizeKB} KB`);
+  const fileSizeMB = Math.round(stats.size / 1024 / 1024 * 10) / 10;
+  if (fileSizeMB >= 1) {
+    console.log(`📊 Dateigröße: ${fileSizeMB} MB`);
+  } else {
+    console.log(`📊 Dateigröße: ${fileSizeKB} KB`);
+  }
 
   return outputPath;
 };
@@ -161,8 +118,11 @@ const saveHTMLDocument = async (htmlContent) => {
 /**
  * Hauptfunktion für die Dokumentgenerierung
  */
-const generateDocument = async () => {
+const generateDocument = async (testMode = false) => {
   console.log('🚀 Starte Dokumentgenerierung...');
+  if (testMode) {
+    console.log('🧪 TEST MODE: Generiere 300-Seiten Dokument');
+  }
   console.log('=' .repeat(50));
 
   try {
@@ -172,19 +132,16 @@ const generateDocument = async () => {
 
     // 2. React Components rendern
     console.log('2️⃣  Rendere React Components...');
-    const reactHTML = renderReactDocument();
+    const reactHTML = renderReactDocument(testMode);
 
     // 3. HTML Template erstellen
     console.log('3️⃣  Erstelle HTML Template...');
     const fullHTML = createHTMLTemplate(reactHTML, cssContent);
 
-    // 4. JSDOM Verarbeitung
-    console.log('4️⃣  Verarbeite mit JSDOM...');
-    const processedHTML = processHTMLWithJSDOM(fullHTML);
-
-    // 5. Datei speichern
-    console.log('5️⃣  Speichere Dokument...');
-    const outputPath = await saveHTMLDocument(processedHTML);
+    // 4. Datei speichern (keine JSDOM-Verarbeitung mehr nötig)
+    console.log('4️⃣  Speichere Dokument...');
+    const outputFileName = testMode ? 'document-300pages.html' : 'document.html';
+    const outputPath = await saveHTMLDocument(fullHTML, outputFileName);
 
     // Erfolgreiche Generierung
     console.log('=' .repeat(50));
@@ -193,8 +150,9 @@ const generateDocument = async () => {
     console.log('💡 Öffne die Datei in einem Browser, um das Ergebnis zu sehen.');
 
     // Zusätzliche Informationen
+    const contents = testMode ? testPages300 : pageContents;
     console.log('\n📋 Zusammenfassung:');
-    console.log(`   • Seiten: ${pageContents.length}`);
+    console.log(`   • Seiten: ${contents.length}`);
     console.log(`   • Generiert: ${new Date().toLocaleString('de-DE')}`);
     console.log(`   • Format: A4 (210 × 297 mm)`);
 
@@ -211,11 +169,18 @@ const generateDocument = async () => {
  * CLI Ausführung
  */
 if (require.main === module) {
-  generateDocument()
+  // Check for test mode argument
+  const testMode = process.argv.includes('--300pages') || process.argv.includes('--large');
+
+  generateDocument(testMode)
     .then(outputPath => {
       console.log(`\n🌐 Um das Dokument anzuzeigen:`);
       console.log(`   open "${outputPath}"`);
       console.log(`   oder öffne die Datei manuell in einem Browser.\n`);
+
+      if (testMode) {
+        console.log(`⚡ Test-Modus: Öffnen könnte bei 300 Seiten etwas dauern...`);
+      }
     })
     .catch(error => {
       console.error('Fataler Fehler:', error);

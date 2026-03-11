@@ -20,9 +20,7 @@ const TableOfContents = ({ sections }) => {
                   {section.title}
                 </a>
                 <span className="toc-dots"></span>
-                <span className="toc-page-number" data-page-ref={section.id}>
-                  {section.pageNumber}
-                </span>
+                {/* Page number automatically generated via CSS target-counter() */}
               </div>
             </div>
           ))}

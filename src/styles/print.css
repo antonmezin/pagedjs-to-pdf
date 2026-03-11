@@ -9,7 +9,7 @@
   margin: 25mm 20mm 25mm 20mm;
 
   @top-right {
-    content: "Seite " counter(page);
+    content: "Seite " counter(page) " von " counter(pages);
     font-family: 'Arial', sans-serif;
     font-size: 10pt;
     color: #666;
@@ -23,13 +23,19 @@
   }
 }
 
-/* Title Page - No headers/footers */
+/* Title Page - Page 1 with numbering */
 @page title {
   @top-right {
-    content: "";
+    content: "Seite " counter(page) " von " counter(pages);
+    font-family: 'Arial', sans-serif;
+    font-size: 10pt;
+    color: #666;
   }
   @bottom-center {
-    content: "";
+    content: "Unternehmensbericht Q1 2024";
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    color: #888;
   }
   margin-top: 50mm;
 }
@@ -37,7 +43,10 @@
 /* Table of Contents Page */
 @page toc {
   @top-right {
-    content: "";
+    content: "Seite " counter(page) " von " counter(pages);
+    font-family: 'Arial', sans-serif;
+    font-size: 10pt;
+    color: #666;
   }
   @bottom-center {
     content: "Inhaltsverzeichnis";
@@ -49,10 +58,8 @@
 
 /* Content Pages */
 @page content {
-  counter-increment: page-content;
-
   @top-right {
-    content: "Seite " counter(page-content);
+    content: "Seite " counter(page) " von " counter(pages);
     font-family: 'Arial', sans-serif;
     font-size: 10pt;
     color: #666;
@@ -247,9 +254,22 @@ strong {
   flex-shrink: 0;
 }
 
+/* CSS target-counter() for automatic page numbers */
+.toc-link::after {
+  content: target-counter(attr(href), page);
+  color: #7f8c8d;
+  font-weight: bold;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .toc-link:hover {
   color: #3498db;
   text-decoration: underline;
+}
+
+.toc-link:hover::after {
+  color: #3498db;
 }
 
 .toc-dots {
@@ -259,12 +279,6 @@ strong {
   height: 1px;
   align-self: flex-end;
   margin-bottom: 4pt;
-}
-
-.toc-page-number {
-  color: #7f8c8d;
-  font-weight: bold;
-  flex-shrink: 0;
 }
 
 .toc-footer {
@@ -314,13 +328,9 @@ strong {
   margin-bottom: 20pt;
 }
 
+/* Page footer removed - page numbering handled by CSS @page rules */
 .page-footer {
-  margin-top: auto;
-  text-align: right;
-  font-size: 9pt;
-  color: #95a5a6;
-  border-top: 1px solid #ecf0f1;
-  padding-top: 8pt;
+  display: none; /* Not needed anymore */
 }
 
 /* ============================================
