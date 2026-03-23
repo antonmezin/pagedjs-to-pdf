@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimales TOC Beispiel mit PagedJS</title>
+
+    <!-- PagedJS Library -->
+    <script src="https://unpkg.com/pagedjs@0.4.3/dist/paged.polyfill.js"></script>
+
+    <style>
+        /* ============================================
+           PAGE SETUP
+           ============================================ */
+
+        @page {
+            size: A4 portrait;
+            margin: 25mm 20mm 25mm 20mm;
+
+            @top-right {
+                content: "Seite " counter(page);
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+                color: #666;
+            }
+
+            @bottom-center {
+                content: "Automatisches TOC Beispiel";
+                font-family: Arial, sans-serif;
+                font-size: 9pt;
+                color: #888;
+            }
+        }
+
+        /* Table of Contents specific page */
+        @page toc {
+            @top-right {
+                content: "Seite " counter(page);
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+                color: #666;
+            }
+
+            @bottom-center {
+                content: "Inhaltsverzeichnis";
+                font-family: Arial, sans-serif;
+                font-size: 9pt;
+                color: #888;
+            }
+        }
+
+        /* Content pages */
+        @page content {
+            @top-right {
+                content: "Seite " counter(page);
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+                color: #666;
+            }
+
+            @bottom-center {
+                content: "Automatisches TOC Beispiel";
+                font-family: Arial, sans-serif;
+                font-size: 9pt;
+                color: #888;
+            }
+        }
+
+        /* ============================================
+           BASIC STYLES
+           ============================================ */
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2, h3 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 12pt;
+            page-break-after: avoid;
+        }
+
+        h1 {
+            font-size: 22pt;
+        }
+
+        h2 {
+            font-size: 18pt;
+            margin-top: 18pt;
+        }
+
+        h3 {
+            font-size: 14pt;
+            margin-top: 14pt;
+        }
+
+        p {
+            margin: 0 0 12pt 0;
+            text-align: justify;
+        }
+
+        /* Force page breaks */
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+        }
+
+        .page-break-avoid {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* ============================================
+           TABLE OF CONTENTS STYLES
+           ============================================ */
+
+        .toc-page {
+            page: toc;
+            min-height: 100vh;
+        }
+
+        .toc-header {
+            margin-bottom: 30pt;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10pt;
+        }
+
+        .toc-title {
+            font-size: 22pt;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .toc-nav {
+            margin: 20pt 0;
+        }
+
+        .toc-entry {
+            margin-bottom: 12pt;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .toc-entry-content {
+            display: flex;
+            align-items: baseline;
+            position: relative;
+        }
+
+        .toc-number {
+            color: #3498db;
+            font-weight: bold;
+            margin-right: 8pt;
+            flex-shrink: 0;
+        }
+
+        .toc-link {
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .toc-link:hover {
+            color: #3498db;
+            text-decoration: underline;
+        }
+
+        /* AUTOMATIC PAGE NUMBERS - Das ist der wichtigste Teil! */
+        .toc-link::after {
+            content: target-counter(attr(href), page);
+            color: #7f8c8d;
+            font-weight: bold;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .toc-link:hover::after {
+            color: #3498db;
+        }
+
+        /* Dotted line between title and page number */
+        .toc-dots {
+            flex-grow: 1;
+            border-bottom: 1px dotted #bdc3c7;
+            margin: 0 8pt;
+            height: 1px;
+            align-self: flex-end;
+            margin-bottom: 4pt;
+        }
+
+        /* ============================================
+           CONTENT PAGE STYLES
+           ============================================ */
+
+        .page {
+            page: content;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-header {
+            margin-bottom: 20pt;
+            border-bottom: 1px solid #3498db;
+            padding-bottom: 10pt;
+        }
+
+        .page-title {
+            font-size: 20pt;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .page-content {
+            flex-grow: 1;
+            margin-bottom: 20pt;
+        }
+
+        /* Sample content for demonstration */
+        .lorem {
+            text-align: justify;
+        }
+
+        .highlight-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15pt;
+            margin: 15pt 0;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============================================
+     TABLE OF CONTENTS PAGE
+     ============================================ -->
+
+<div class="toc-page">
+    <div class="toc-header">
+        <h1 class="toc-title">Inhaltsverzeichnis</h1>
+    </div>
+
+    <div class="toc-content">
+        <nav class="toc-nav">
+            <div class="toc-entry">
+                <div class="toc-entry-content">
+                    <span class="toc-number">1.</span>
+                    <a href="#einleitung" class="toc-link">Einleitung</a>
+                    <span class="toc-dots"></span>
+                    <!-- Seitenzahl wird automatisch hier eingefügt -->
+                </div>
+            </div>
+
+            <div class="toc-entry">
+                <div class="toc-entry-content">
+                    <span class="toc-number">2.</span>
+                    <a href="#grundlagen" class="toc-link">Grundlagen der Automatisierung</a>
+                    <span class="toc-dots"></span>
+                </div>
+            </div>
+
+            <div class="toc-entry">
+                <div class="toc-entry-content">
+                    <span class="toc-number">3.</span>
+                    <a href="#technische-details" class="toc-link">Technische Details</a>
+                    <span class="toc-dots"></span>
+                </div>
+            </div>
+
+            <div class="toc-entry">
+                <div class="toc-entry-content">
+                    <span class="toc-number">4.</span>
+                    <a href="#implementation" class="toc-link">Implementation</a>
+                    <span class="toc-dots"></span>
+                </div>
+            </div>
+
+            <div class="toc-entry">
+                <div class="toc-entry-content">
+                    <span class="toc-number">5.</span>
+                    <a href="#best-practices" class="toc-link">Best Practices</a>
+                    <span class="toc-dots"></span>
+                </div>
+            </div>
+
+            <div class="toc-entry">
+                <div class="toc-entry-content">
+                    <span class="toc-number">6.</span>
+                    <a href="#case-studies" class="toc-link">Fallstudien</a>
+                    <span class="toc-dots"></span>
+                </div>
+            </div>
+
+            <div class="toc-entry">
+                <div class="toc-entry-content">
+                    <span class="toc-number">7.</span>
+                    <a href="#troubleshooting" class="toc-link">Problembehandlung</a>
+                    <span class="toc-dots"></span>
+                </div>
+            </div>
+
+            <div class="toc-entry">
+                <div class="toc-entry-content">
+                    <span class="toc-number">8.</span>
+                    <a href="#future-outlook" class="toc-link">Zukunftsausblick</a>
+                    <span class="toc-dots"></span>
+                </div>
+            </div>
+
+            <div class="toc-entry">
+                <div class="toc-entry-content">
+                    <span class="toc-number">9.</span>
+                    <a href="#conclusion" class="toc-link">Fazit und Zusammenfassung</a>
+                    <span class="toc-dots"></span>
+                </div>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<!-- Seitenumbruch nach TOC -->
+<div class="page-break"></div>
+
+<!-- ============================================
+     KAPITEL 1: EINLEITUNG (3-4 Seiten)
+     ============================================ -->
+
+<div class="page" id="einleitung">
+    <div class="page-header">
+        <h1 class="page-title">1. Einleitung</h1>
+    </div>
+
+    <div class="page-content">
+        <h2>Willkommen zur automatischen Dokumentgenerierung</h2>
+        <p class="lorem">
+            Dieses Dokument demonstriert die automatische Erstellung eines Inhaltsverzeichnisses
+            mit PagedJS. Die Seitenzahlen im Inhaltsverzeichnis werden vollautomatisch generiert
+            und aktualisieren sich, wenn sich der Inhalt ändert.
+        </p>
+
+        <p class="lorem">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt
+            ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+            ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
+            reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+            Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+            mollit anim id est laborum.
+        </p>
+
+        <div class="highlight-box">
+            <h3>Wichtiger Hinweis</h3>
+            <p>
+                Die automatische Seitenzahlen-Generierung funktioniert über die CSS-Eigenschaft
+                <strong>target-counter()</strong>. Diese verweist auf das Ziel-Element und
+                ermittelt automatisch dessen Seitenzahl.
+            </p>
+        </div>
+
+        <p class="lorem">
+            Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque
+            laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi
+            architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas
+            sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione
+            voluptatem sequi nesciunt.
+        </p>
+
+        <p class="lorem">
+            Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci
+            velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam
+            quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis
+            suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?
+        </p>
+
+        <h2>Aufbau dieses Dokuments</h2>
+        <p class="lorem">
+            Das Dokument ist in neun Hauptkapitel gegliedert, die jeweils verschiedene Aspekte
+            der automatischen Dokumentgenerierung behandeln. Jedes Kapitel wurde so konzipiert,
+            dass es mehrere Seiten umfasst und realistische Inhaltsmengen simuliert.
+        </p>
+
+        <p class="lorem">
+            At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium
+            voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint
+            occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt
+            mollitia animi, id est laborum et dolorum fuga.
+        </p>
+
+        <p class="lorem">
+            Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum
+            soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat
+            facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.
+        </p>
+    </div>
+</div>
+
+<!-- Seitenumbruch -->
+<div class="page-break"></div>
+
+<!-- ============================================
+     KAPITEL 2: GRUNDLAGEN (4-5 Seiten)
+     ============================================ -->
+
+<div class="page" id="grundlagen">
+    <div class="page-header">
+        <h1 class="page-title">2. Grundlagen der Automatisierung</h1>
+    </div>
+
+    <div class="page-content">
+        <h2>Was ist PagedJS?</h2>
+        <p class="lorem">
+            PagedJS ist eine JavaScript-Bibliothek, die CSS Paged Media Module implementiert.
+            Sie ermöglicht es, HTML- und CSS-Dateien in druckfertige Dokumente zu verwandeln,
+            wobei fortgeschrittene Funktionen wie automatische Seitenzählung, Kopf- und Fußzeilen
+            sowie Inhaltsverzeichnisse unterstützt werden.
+        </p>
+
+        <p class="lorem">
+            Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe
+            eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum
+            rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias
+            consequatur aut perferendis doloribus asperiores repellat.
+        </p>
+
+        <h2>CSS target-counter() Funktion</h2>
+        <p class="lorem">
+            Die target-counter() Funktion ist das Herzstück der automatischen Seitenzahlen-
+            Generierung. Sie nimmt eine Referenz auf ein Element (über attr(href)) und gibt
+            die Seitenzahl zurück, auf der sich dieses Element befindet.
+        </p>
+
+        <div class="highlight-box">
+            <h3>CSS Code Beispiel</h3>
+            <p style="font-family: monospace; background-color: #f4f4f4; padding: 10pt; font-size: 10pt;">
+                .toc-link::after {<br>
+                &nbsp;&nbsp;content: target-counter(attr(href), page);<br>
+                &nbsp;&nbsp;color: #7f8c8d;<br>
+                &nbsp;&nbsp;font-weight: bold;<br>
+                }
+            </p>
+        </div>
+
+        <p class="lorem">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+            incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+            exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+        </p>
+
+        <h2>Vorteile der Automatisierung</h2>
+        <p class="lorem">
+            Die automatische Generierung von Inhaltsverzeichnissen bietet mehrere entscheidende
+            Vorteile gegenüber manuellen Ansätzen:
+        </p>
+
+        <p class="lorem">
+            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+            fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
+            culpa qui officia deserunt mollit anim id est laborum.
+        </p>
+
+        <p class="lorem">
+            Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque
+            laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi
+            architecto beatae vitae dicta sunt explicabo.
+        </p>
+
+        <p class="lorem">
+            Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia
+            consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro
+            quisquam est, qui dolorem ipsum quia dolor sit amet.
+        </p>
+    </div>
+</div>
+
+<!-- Seitenumbruch -->
+<div class="page-break"></div>
+
+<!-- ============================================
+     KAPITEL 3: TECHNISCHE DETAILS (3-4 Seiten)
+     ============================================ -->
+
+<div class="page" id="technische-details">
+    <div class="page-header">
+        <h1 class="page-title">3. Technische Details</h1>
+    </div>
+
+    <div class="page-content">
+        <h2>HTML-Struktur für TOC</h2>
+        <p class="lorem">
+            Die HTML-Struktur für ein automatisches Inhaltsverzeichnis ist relativ einfach.
+            Jeder Eintrag im Inhaltsverzeichnis benötigt einen Link, der auf das entsprechende
+            Kapitel verweist. Die Seitenzahl wird dann automatisch über CSS generiert.
+        </p>
+
+        <p class="lorem">
+            At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium
+            voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint
+            occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt
+            mollitia animi, id est laborum et dolorum fuga.
+        </p>
+
+        <h2>CSS @page Regeln</h2>
+        <p class="lorem">
+            Die @page Regeln definieren das Seitenlayout und können unterschiedliche Stile
+            für verschiedene Seitentypen festlegen. So können wir separate Layouts für
+            das Inhaltsverzeichnis und die Inhaltsseiten definieren.
+        </p>
+
+        <div class="highlight-box">
+            <h3>Verschiedene Seitentypen</h3>
+            <p>
+                • @page toc - Für Inhaltsverzeichnis-Seiten<br>
+                • @page content - Für normale Inhaltsseiten<br>
+                • @page title - Für Titelseiten
+            </p>
+        </div>
+
+        <p class="lorem">
+            Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum
+            soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat
+            facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.
+        </p>
+
+        <h2>Page Break Kontrolle</h2>
+        <p class="lorem">
+            Die Kontrolle über Seitenumbrüche ist essentiell für professionelle Dokumente.
+            Mit CSS-Eigenschaften wie page-break-after, page-break-before und page-break-inside
+            können wir genau steuern, wo Seitenumbrüche auftreten.
+        </p>
+
+        <p class="lorem">
+            Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe
+            eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum
+            rerum hic tenetur a sapiente delectus.
+        </p>
+
+        <p class="lorem">
+            Ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus
+            asperiores repellat. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
+            do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+    </div>
+</div>
+
+<!-- Seitenumbruch -->
+<div class="page-break"></div>
+
+<!-- Weitere Kapitel folgen dem gleichen Muster... -->
+
+<!-- ============================================
+     KAPITEL 4: IMPLEMENTATION (2-3 Seiten)
+     ============================================ -->
+
+<div class="page" id="implementation">
+    <div class="page-header">
+        <h1 class="page-title">4. Implementation</h1>
+    </div>
+
+    <div class="page-content">
+        <h2>Schritt-für-Schritt Anleitung</h2>
+        <p class="lorem">
+            Die Implementation eines automatischen Inhaltsverzeichnisses mit PagedJS folgt
+            einem klaren Prozess. Hier sind die wichtigsten Schritte für eine erfolgreiche
+            Umsetzung.
+        </p>
+
+        <p class="lorem">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+            incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+            exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+        </p>
+
+        <h2>Häufige Fallstricke</h2>
+        <p class="lorem">
+            Bei der Implementation treten häufig bestimmte Probleme auf. Die Kenntnis dieser
+            typischen Fallstricke kann viel Zeit und Frustration sparen.
+        </p>
+
+        <p class="lorem">
+            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+            fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
+            culpa qui officia deserunt mollit anim id est laborum.
+        </p>
+
+        <p class="lorem">
+            Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque
+            laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi
+            architecto beatae vitae dicta sunt explicabo.
+        </p>
+    </div>
+</div>
+
+<!-- Seitenumbruch -->
+<div class="page-break"></div>
+
+<!-- ============================================
+     KAPITEL 5: BEST PRACTICES (3-4 Seiten)
+     ============================================ -->
+
+<div class="page" id="best-practices">
+    <div class="page-header">
+        <h1 class="page-title">5. Best Practices</h1>
+    </div>
+
+    <div class="page-content">
+        <h2>Struktur und Organisation</h2>
+        <p class="lorem">
+            Eine durchdachte Struktur ist der Schlüssel zu einem professionellen und wartbaren
+            Dokumentensystem. Die folgenden Best Practices haben sich in der Praxis bewährt.
+        </p>
+
+        <p class="lorem">
+            Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia
+            consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro
+            quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.
+        </p>
+
+        <h2>Performance Optimierung</h2>
+        <p class="lorem">
+            Bei größeren Dokumenten wird Performance zu einem wichtigen Faktor. Es gibt
+            verschiedene Techniken, um die Renderzeit zu optimieren und die Benutzerfreundlichkeit
+            zu verbessern.
+        </p>
+
+        <p class="lorem">
+            Sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam
+            quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam
+            corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur.
+        </p>
+
+        <div class="highlight-box">
+            <h3>Performance Tipps</h3>
+            <p>
+                • Verwenden Sie CSS-Grid oder Flexbox für Layouts<br>
+                • Minimieren Sie die Anzahl der DOM-Elemente<br>
+                • Optimieren Sie Bilder und andere Medien<br>
+                • Nutzen Sie Browser-Caching wo möglich
+            </p>
+        </div>
+
+        <p class="lorem">
+            Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil
+            molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+            At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium.
+        </p>
+    </div>
+</div>
+
+<!-- Seitenumbruch -->
+<div class="page-break"></div>
+
+<!-- ============================================
+     KAPITEL 6: FALLSTUDIEN (4-5 Seiten)
+     ============================================ -->
+
+<div class="page" id="case-studies">
+    <div class="page-header">
+        <h1 class="page-title">6. Fallstudien</h1>
+    </div>
+
+    <div class="page-content">
+        <h2>Fallstudie 1: Unternehmensberichte</h2>
+        <p class="lorem">
+            Ein großes Unternehmen benötigte eine Lösung zur automatischen Generierung von
+            Quartalsberichten. Die Berichte umfassten typischerweise 50-100 Seiten mit
+            komplexen Tabellen und Grafiken.
+        </p>
+
+        <p class="lorem">
+            Voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint
+            occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt
+            mollitia animi, id est laborum et dolorum fuga.
+        </p>
+
+        <h2>Fallstudie 2: Technische Dokumentation</h2>
+        <p class="lorem">
+            Ein Software-Unternehmen wollte seine technische Dokumentation automatisiert
+            aus dem Quellcode generieren. Das Inhaltsverzeichnis sollte dabei automatisch
+            aus den Code-Kommentaren und der Projektstruktur erstellt werden.
+        </p>
+
+        <p class="lorem">
+            Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum
+            soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat
+            facere possimus, omnis voluptas assumenda est.
+        </p>
+
+        <h2>Fallstudie 3: Akademische Publikationen</h2>
+        <p class="lorem">
+            Eine Universität suchte nach einer Lösung für die automatische Formatierung von
+            Dissertationen und wissenschaftlichen Arbeiten. Besonders wichtig war dabei die
+            korrekte Nummerierung und Referenzierung.
+        </p>
+
+        <p class="lorem">
+            Omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut
+            rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae
+            non recusandae.
+        </p>
+
+        <p class="lorem">
+            Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus
+            maiores alias consequatur aut perferendis doloribus asperiores repellat. Lorem ipsum
+            dolor sit amet, consectetur adipiscing elit.
+        </p>
+    </div>
+</div>
+
+<!-- Seitenumbruch -->
+<div class="page-break"></div>
+
+<!-- ============================================
+     KAPITEL 7: PROBLEMBEHANDLUNG (2-3 Seiten)
+     ============================================ -->
+
+<div class="page" id="troubleshooting">
+    <div class="page-header">
+        <h1 class="page-title">7. Problembehandlung</h1>
+    </div>
+
+    <div class="page-content">
+        <h2>Häufige Probleme und Lösungen</h2>
+        <p class="lorem">
+            Bei der Arbeit mit PagedJS und automatischen Inhaltsverzeichnissen treten immer
+            wieder ähnliche Probleme auf. Hier sind die häufigsten Fragen und ihre Lösungen.
+        </p>
+
+        <p class="lorem">
+            Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+            veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit.
+        </p>
+
+        <h2>Debugging-Techniken</h2>
+        <p class="lorem">
+            Wenn das Inhaltsverzeichnis nicht korrekt funktioniert, gibt es bewährte Methoden
+            zur Fehlersuche. Diese systematischen Ansätze helfen dabei, Probleme schnell zu
+            identifizieren und zu beheben.
+        </p>
+
+        <div class="highlight-box">
+            <h3>Debugging Checkliste</h3>
+            <p>
+                1. Überprüfen Sie die HTML-Struktur<br>
+                2. Validieren Sie die CSS-Syntax<br>
+                3. Testen Sie die Links im Inhaltsverzeichnis<br>
+                4. Kontrollieren Sie die @page Regeln<br>
+                5. Überprüfen Sie die JavaScript-Konsole
+            </p>
+        </div>
+
+        <p class="lorem">
+            In voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
+            occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim
+            id est laborum. Sed ut perspiciatis unde omnis iste natus error.
+        </p>
+    </div>
+</div>
+
+<!-- Seitenumbruch -->
+<div class="page-break"></div>
+
+<!-- ============================================
+     KAPITEL 8: ZUKUNFTSAUSBLICK (2-3 Seiten)
+     ============================================ -->
+
+<div class="page" id="future-outlook">
+    <div class="page-header">
+        <h1 class="page-title">8. Zukunftsausblick</h1>
+    </div>
+
+    <div class="page-content">
+        <h2>Weiterentwicklungen in PagedJS</h2>
+        <p class="lorem">
+            PagedJS wird kontinuierlich weiterentwickelt. Die Community arbeitet an neuen
+            Features und Verbesserungen, die die Möglichkeiten für automatische Dokument-
+            generierung noch weiter ausbauen werden.
+        </p>
+
+        <p class="lorem">
+            Sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa
+            quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt
+            explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur.
+        </p>
+
+        <h2>Integration mit modernen Workflows</h2>
+        <p class="lorem">
+            Die Integration von automatischer Dokumentgenerierung in moderne CI/CD-Pipelines
+            und Entwicklungsworkflows wird immer wichtiger. Tools wie GitHub Actions und
+            andere Automatisierungsplattformen machen es möglich, Dokumente vollautomatisch
+            zu erstellen und zu verteilen.
+        </p>
+
+        <p class="lorem">
+            Aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem
+            sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet,
+            consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt.
+        </p>
+
+        <p class="lorem">
+            Ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam,
+            quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid
+            ex ea commodi consequatur?
+        </p>
+    </div>
+</div>
+
+<!-- Seitenumbruch -->
+<div class="page-break"></div>
+
+<!-- ============================================
+     KAPITEL 9: FAZIT (2-3 Seiten)
+     ============================================ -->
+
+<div class="page" id="conclusion">
+    <div class="page-header">
+        <h1 class="page-title">9. Fazit und Zusammenfassung</h1>
+    </div>
+
+    <div class="page-content">
+        <h2>Wichtigste Erkenntnisse</h2>
+        <p class="lorem">
+            Die automatische Generierung von Inhaltsverzeichnissen mit PagedJS bietet
+            erhebliche Vorteile für die Dokumentenerstellung. Die wichtigsten Erkenntnisse
+            aus diesem Leitfaden lassen sich wie folgt zusammenfassen.
+        </p>
+
+        <p class="lorem">
+            Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil
+            molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+            At vero eos et accusamus et iusto odio dignissimos ducimus.
+        </p>
+
+        <div class="highlight-box">
+            <h3>Zentrale Vorteile</h3>
+            <p>
+                • Vollautomatische Seitenzahlen-Generierung<br>
+                • Professionelles Layout ohne manuellen Aufwand<br>
+                • Einfache Wartung und Aktualisierung<br>
+                • Konsistente Formatierung<br>
+                • Integration in bestehende Workflows
+            </p>
+        </div>
+
+        <h2>Empfehlungen für die Praxis</h2>
+        <p class="lorem">
+            Basierend auf den Erfahrungen aus verschiedenen Projekten können wir folgende
+            Empfehlungen für die praktische Umsetzung geben. Diese Richtlinien helfen dabei,
+            häufige Probleme zu vermeiden und optimale Ergebnisse zu erzielen.
+        </p>
+
+        <p class="lorem">
+            Qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas
+            molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa
+            qui officia deserunt mollitia animi, id est laborum et dolorum fuga.
+        </p>
+
+        <h2>Schlusswort</h2>
+        <p class="lorem">
+            PagedJS und die target-counter() Funktion eröffnen neue Möglichkeiten für die
+            automatische Dokumentgenerierung. Mit den richtigen Techniken und einem soliden
+            Verständnis der zugrunde liegenden Konzepte können professionelle, druckfertige
+            Dokumente mit minimalem Aufwand erstellt werden.
+        </p>
+
+        <p class="lorem">
+            Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum
+            soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat
+            facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.
+        </p>
+
+        <p class="lorem">
+            Wir hoffen, dass dieser Leitfaden Ihnen dabei hilft, eigene Projekte erfolgreich
+            umzusetzen und die Vorteile der automatischen Dokumentgenerierung voll auszuschöpfen.
+        </p>
+    </div>
+</div>
+
+</body>
+</html>
